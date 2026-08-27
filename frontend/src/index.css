@@ -1,0 +1,148 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #050811;
+    color: #f1f5f9;
+    font-family: 'Inter', 'Outfit', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+}
+
+/* Cybernetic Grid Overlay */
+.grid-overlay {
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* Custom Cyber UI Styling */
+.cyber-card {
+  @apply bg-slate-900/90 border border-slate-800/80 rounded-xl shadow-xl backdrop-blur-md relative overflow-hidden;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.cyber-card-interactive {
+  @apply cyber-card transition-all duration-200 hover:border-cyan-500/40 hover:shadow-cyan-950/30 hover:shadow-2xl hover:-translate-y-0.5;
+}
+
+.cyber-input {
+  @apply bg-slate-950/90 border border-slate-800 rounded-lg px-4 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50 transition-all duration-150 shadow-inner;
+}
+
+.cyber-btn-primary {
+  @apply relative inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-xs font-bold text-slate-950 bg-gradient-to-r from-cyan-400 via-cyan-500 to-violet-500 hover:from-cyan-300 hover:to-violet-400 transition-all duration-200 shadow-lg shadow-cyan-950/60 hover:shadow-cyan-500/25 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none;
+}
+
+.cyber-btn-secondary {
+  @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-semibold text-slate-200 bg-slate-900/80 hover:bg-slate-800/90 border border-slate-700/80 hover:border-cyan-500/50 transition-all duration-150 hover:text-cyan-400 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.cyber-btn-ghost {
+  @apply inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 transition-colors duration-150;
+}
+
+.cyber-btn-danger {
+  @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold text-red-200 bg-red-950/40 hover:bg-red-900/60 border border-red-800/60 hover:border-red-500 transition-all duration-150 active:scale-[0.99];
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #050811;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #06b6d4;
+}
+
+/* Glowing Nodes & Accents */
+.glow-cyan {
+  box-shadow: 0 0 20px 2px rgba(6, 182, 212, 0.45);
+}
+
+.glow-violet {
+  box-shadow: 0 0 20px 2px rgba(139, 92, 246, 0.45);
+}
+
+.glow-red {
+  box-shadow: 0 0 20px 2px rgba(239, 68, 68, 0.45);
+}
+
+/* Micro-Animations & Keyframe FX */
+@keyframes scanline {
+  0% { transform: translateY(-100%); opacity: 0.8; }
+  50% { opacity: 1; }
+  100% { transform: translateY(1000%); opacity: 0.2; }
+}
+
+@keyframes radarSweep {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { transform: scale(1); opacity: 0.9; box-shadow: 0 0 10px rgba(6, 182, 212, 0.3); }
+  50% { transform: scale(1.03); opacity: 1; box-shadow: 0 0 25px rgba(6, 182, 212, 0.7); }
+}
+
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-scanline {
+  animation: scanline 2.5s linear infinite;
+}
+
+.animate-radar {
+  animation: radarSweep 4s linear infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 3s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: floatSlow 5s ease-in-out infinite;
+}
+
+.shimmer-text {
+  background: linear-gradient(90deg, #94a3b8 0%, #38bdf8 50%, #94a3b8 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 3s linear infinite;
+}
+
+/* Accessibility: Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-scanline,
+  .animate-radar,
+  .animate-pulse-glow,
+  .animate-float,
+  .shimmer-text {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+

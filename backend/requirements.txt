@@ -1,0 +1,16 @@
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.6.0
+pydantic-settings>=2.1.0
+sqlalchemy>=2.0.25
+psycopg[binary]>=3.1.0
+python-dotenv>=1.0.0
+httpx>=0.26.0
+beautifulsoup4>=4.12.3
+pyjwt[crypto]>=2.8.0
+cryptography>=42.0.0
+python-multipart>=0.0.6
+tldextract>=5.1.1
+Pillow>=10.2.0
+rapidfuzz>=3.6.0
+reportlab>=5.0.0
