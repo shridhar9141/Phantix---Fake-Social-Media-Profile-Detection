@@ -2,6 +2,10 @@ import os
 import sys
 import uvicorn
 
+# Ensure stdout and stderr flush immediately for Railway logs
+sys.stdout.reconfigure(line_buffering=True) if hasattr(sys.stdout, "reconfigure") else None
+sys.stderr.reconfigure(line_buffering=True) if hasattr(sys.stderr, "reconfigure") else None
+
 if __name__ == "__main__":
     port_str = os.getenv("PORT", "8000")
     try:
@@ -9,17 +13,18 @@ if __name__ == "__main__":
     except (ValueError, TypeError):
         port = 8000
 
-    print("==========================================================")
-    print(f"[STARTUP] Phantix Production Server starting on 0.0.0.0:{port}")
-    print(f"[STARTUP] Environment: {os.getenv('ENVIRONMENT', 'production')}")
-    print(f"[STARTUP] Database: {'PostgreSQL URL detected' if os.getenv('DATABASE_URL') else 'Local fallback SQLite'}")
-    print(f"[STARTUP] Firebase Project: {os.getenv('FIREBASE_PROJECT_ID', 'fake-social-media-detect-4bf0a')}")
-    print("==========================================================")
+    print("==========================================================", flush=True)
+    print(f"[STARTUP] Phantix Production Server starting on 0.0.0.0:{port}", flush=True)
+    print(f"[STARTUP] Environment: {os.getenv('ENVIRONMENT', 'production')}", flush=True)
+    print(f"[STARTUP] Database: {'PostgreSQL URL configured' if os.getenv('DATABASE_URL') else 'SQLite fallback (zero-config startup)'}", flush=True)
+    print(f"[STARTUP] Firebase Project: {os.getenv('FIREBASE_PROJECT_ID', 'fake-social-media-detect-4bf0a')}", flush=True)
+    print("==========================================================", flush=True)
 
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
         port=port,
         log_level="info",
-        access_log=True
+        access_log=True,
+        workers=1
     )

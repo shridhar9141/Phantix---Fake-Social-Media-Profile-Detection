@@ -17,22 +17,9 @@ RUN npm ci
 # Copy frontend source files
 COPY frontend/ ./
 
-# Build arguments for Vite environment variables with fallback defaults
-ARG VITE_FIREBASE_API_KEY=AIzaSyAYwHbLX1HEPIuovsXdafa6uOHkA9mWAnU
-ARG VITE_FIREBASE_AUTH_DOMAIN=fake-social-media-detect-4bf0a.firebaseapp.com
-ARG VITE_FIREBASE_PROJECT_ID=fake-social-media-detect-4bf0a
-ARG VITE_FIREBASE_STORAGE_BUCKET=fake-social-media-detect-4bf0a.firebasestorage.app
-ARG VITE_FIREBASE_MESSAGING_SENDER_ID=382068959219
-ARG VITE_FIREBASE_APP_ID=1:382068959219:web:f01741f1c608c82ecf9486
+# Build-time API configuration (same-origin relative path in production)
 ARG VITE_API_BASE_URL=/api/v1
-
-ENV VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY \
-    VITE_FIREBASE_AUTH_DOMAIN=$VITE_FIREBASE_AUTH_DOMAIN \
-    VITE_FIREBASE_PROJECT_ID=$VITE_FIREBASE_PROJECT_ID \
-    VITE_FIREBASE_STORAGE_BUCKET=$VITE_FIREBASE_STORAGE_BUCKET \
-    VITE_FIREBASE_MESSAGING_SENDER_ID=$VITE_FIREBASE_MESSAGING_SENDER_ID \
-    VITE_FIREBASE_APP_ID=$VITE_FIREBASE_APP_ID \
-    VITE_API_BASE_URL=$VITE_API_BASE_URL
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
 # Build production React assets to /app/frontend/dist
 RUN npm run build
@@ -67,12 +54,12 @@ COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
 
 WORKDIR /app/backend
 
-# Expose container port (dynamic in Railway)
+# Expose container port (documentation only; Railway uses dynamic $PORT)
 EXPOSE 8000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+# Container liveness health check
+HEALTHCHECK --interval=15s --timeout=5s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:${PORT:-8000}/health || exit 1
 
-# Start FastAPI server via start.py
+# Start FastAPI server via production entrypoint
 CMD ["python", "start.py"]

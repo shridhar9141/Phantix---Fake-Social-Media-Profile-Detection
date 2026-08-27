@@ -1,4 +1,5 @@
 import os
+import asyncio
 from pathlib import Path
 import uvicorn
 from fastapi import FastAPI, Request, Depends
@@ -7,6 +8,7 @@ from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.orm import Session
+from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.core.database import engine, Base, get_db
@@ -24,20 +26,27 @@ from app.api.v1.network import router as net_router
 from app.api.v1.reports import router as reports_router
 from app.api.v1.complaints import router as complaints_router
 
-from contextlib import asynccontextmanager
+def init_db_tables_background():
+    """Initializes database tables in a separate thread so server startup is instant."""
+    try:
+        print("[DATABASE] Auto-creating tables in background thread...")
+        Base.metadata.create_all(bind=engine)
+        print("[DATABASE] Tables auto-initialized successfully.")
+    except Exception as exc:
+        print(f"[DATABASE WARNING] Background table initialization deferred: {exc}")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
     Application lifespan handler.
-    Initializes database tables safely on startup without crashing health checks.
+    Starts background tasks and ensures instant HTTP readiness for Railway health checks.
     """
-    try:
-        Base.metadata.create_all(bind=engine)
-        print("[DATABASE] Tables auto-initialized successfully.")
-    except Exception as exc:
-        print(f"[DATABASE WARNING] Deferred table auto-creation: {exc}")
+    print("[STARTUP] Phantix FastAPI lifespan initializing...")
+    # Launch table creation in a non-blocking background thread
+    asyncio.create_task(asyncio.to_thread(init_db_tables_background))
+    print("[STARTUP] Healthcheck probe ready on /health.")
     yield
+    print("[SHUTDOWN] Phantix FastAPI shutting down...")
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -58,7 +67,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Exception Handlers
+# Global Exception Handler
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
@@ -72,25 +81,15 @@ async def global_exception_handler(request: Request, exc: Exception):
         }
     )
 
-# Include API Routers under /api/v1
-app.include_router(auth_router, prefix=settings.API_V1_STR)
-app.include_router(users_router, prefix=settings.API_V1_STR)
-app.include_router(activity_router, prefix=settings.API_V1_STR)
-app.include_router(search_router, prefix=settings.API_V1_STR)
-app.include_router(profiles_router, prefix=settings.API_V1_STR)
-app.include_router(dataset_router, prefix=settings.API_V1_STR)
-app.include_router(inv_router, prefix=settings.API_V1_STR)
-app.include_router(dash_router, prefix=settings.API_V1_STR)
-app.include_router(net_router, prefix=settings.API_V1_STR)
-app.include_router(reports_router, prefix=settings.API_V1_STR)
-app.include_router(complaints_router, prefix=settings.API_V1_STR)
-
 # ------------------------------------------------------------------------------
 # Health Checks (Liveness and Readiness)
 # ------------------------------------------------------------------------------
-@app.get("/health", tags=["Health"])
+@app.api_route("/health", methods=["GET", "HEAD"], tags=["Health"])
 def health_check():
-    """Liveness probe returning basic service health."""
+    """
+    Liveness probe returning basic service health.
+    Fast, lightweight, and non-blocking for Railway healthcheck monitoring.
+    """
     return {
         "status": "ok",
         "service": "Phantix Fake Social Media Profile Detection",
@@ -116,6 +115,19 @@ def readiness_check(db: Session = Depends(get_db)):
             }
         )
 
+# Include API Routers under /api/v1
+app.include_router(auth_router, prefix=settings.API_V1_STR)
+app.include_router(users_router, prefix=settings.API_V1_STR)
+app.include_router(activity_router, prefix=settings.API_V1_STR)
+app.include_router(search_router, prefix=settings.API_V1_STR)
+app.include_router(profiles_router, prefix=settings.API_V1_STR)
+app.include_router(dataset_router, prefix=settings.API_V1_STR)
+app.include_router(inv_router, prefix=settings.API_V1_STR)
+app.include_router(dash_router, prefix=settings.API_V1_STR)
+app.include_router(net_router, prefix=settings.API_V1_STR)
+app.include_router(reports_router, prefix=settings.API_V1_STR)
+app.include_router(complaints_router, prefix=settings.API_V1_STR)
+
 # ------------------------------------------------------------------------------
 # Static Files & Single-Page Application (SPA) Serving
 # ------------------------------------------------------------------------------
@@ -124,7 +136,7 @@ def resolve_static_dir() -> Path:
     if settings.STATIC_DIR and Path(settings.STATIC_DIR).is_dir():
         return Path(settings.STATIC_DIR).resolve()
     
-    # Common candidate locations
+    # Candidate locations in local and container environments
     candidates = [
         Path(__file__).resolve().parent.parent.parent / "frontend" / "dist",
         Path("/app/frontend/dist"),
