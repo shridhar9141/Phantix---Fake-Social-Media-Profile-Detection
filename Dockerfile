@@ -37,7 +37,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Install curl for container health checks
+# Install curl for connectivity and diagnostics
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
@@ -54,12 +54,8 @@ COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
 
 WORKDIR /app/backend
 
-# Expose container port (documentation only; Railway uses dynamic $PORT)
+# Documentation port (Railway dynamically overrides $PORT)
 EXPOSE 8000
-
-# Container liveness health check
-HEALTHCHECK --interval=15s --timeout=5s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:${PORT:-8000}/health || exit 1
 
 # Start FastAPI server via production entrypoint
 CMD ["python", "start.py"]
