@@ -1,26 +1,19 @@
 services:
-  # Option 1: Unified Docker Web Service (React SPA + FastAPI Backend on One URL)
+  # Unified Docker Web Service (Full-Stack React SPA + FastAPI Backend on One URL)
   - type: web
     name: phantix-app
     runtime: docker
-    dockerfilePath: Dockerfile
+    dockerfilePath: ./Dockerfile
     plan: free
     healthCheckPath: /health
+    autoDeploy: true
     envVars:
       - key: ENVIRONMENT
         value: production
       - key: FIREBASE_PROJECT_ID
         value: fake-social-media-detect-4bf0a
+      - key: JWT_SECRET_KEY
+        generateValue: true
       - key: DATABASE_URL
         sync: false
 
-  # Option 2: Render Static Site (React SPA frontend standalone)
-  - type: web
-    name: phantix-fake-social-media-profile
-    runtime: static
-    buildCommand: npm --prefix frontend install && npm --prefix frontend run build
-    staticPublishPath: ./frontend/dist
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
