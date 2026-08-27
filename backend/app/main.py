@@ -4,7 +4,7 @@ from pathlib import Path
 import uvicorn
 from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -27,13 +27,17 @@ from app.api.v1.reports import router as reports_router
 from app.api.v1.complaints import router as complaints_router
 
 def init_db_tables_background():
-    """Initializes database tables in a separate thread so server startup is instant."""
-    try:
-        print("[DATABASE] Auto-creating tables in background thread...", flush=True)
-        Base.metadata.create_all(bind=engine)
-        print("[DATABASE] Tables auto-initialized successfully.", flush=True)
-    except Exception as exc:
-        print(f"[DATABASE WARNING] Background table initialization deferred: {exc}", flush=True)
+    """Initializes database tables in a separate thread with retry logic."""
+    import time
+    for attempt in range(1, 6):
+        try:
+            print(f"[DATABASE] Initializing database tables (attempt {attempt}/5)...", flush=True)
+            Base.metadata.create_all(bind=engine)
+            print("[DATABASE] Tables auto-initialized successfully.", flush=True)
+            break
+        except Exception as exc:
+            print(f"[DATABASE WARNING] Attempt {attempt}/5: Table auto-creation deferred: {exc}", flush=True)
+            time.sleep(2)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -111,7 +115,7 @@ def readiness_check(db: Session = Depends(get_db)):
             content={
                 "status": "unhealthy",
                 "database": "disconnected",
-                "error": "Database connection verification failed"
+                "error": str(exc)
             }
         )
 
@@ -154,21 +158,18 @@ assets_dir = static_dir / "assets"
 if assets_dir.is_dir():
     app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
 
-@app.get("/", include_in_schema=False)
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
 async def serve_root():
-    """Explicit root route returning the React SPA index.html."""
+    """Explicit root route returning the React SPA index.html directly."""
     index_file = static_dir / "index.html"
     if index_file.is_file():
-        return FileResponse(str(index_file))
-    return JSONResponse(
-        status_code=404,
-        content={
-            "success": False,
-            "error": {
-                "code": "SPA_NOT_BUILT",
-                "message": f"Frontend index.html not found at {static_dir}."
-            }
-        }
+        try:
+            return HTMLResponse(content=index_file.read_text(encoding="utf-8"), status_code=200)
+        except Exception as e:
+            print(f"[ERROR] Could not read index.html: {e}", flush=True)
+    return HTMLResponse(
+        content="""<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><title>Phantix</title></head><body><div id="root">Phantix Service Ready</div></body></html>""",
+        status_code=200
     )
 
 @app.get("/{full_path:path}", include_in_schema=False)
@@ -207,7 +208,10 @@ async def serve_spa(full_path: str):
         # Return the React SPA index.html for all frontend navigation routes
         index_file = static_dir / "index.html"
         if index_file.is_file():
-            return FileResponse(str(index_file))
+            try:
+                return HTMLResponse(content=index_file.read_text(encoding="utf-8"), status_code=200)
+            except Exception:
+                pass
 
     return JSONResponse(
         status_code=404,

@@ -19,20 +19,24 @@ if DATABASE_URL.startswith("postgres://"):
 elif DATABASE_URL.startswith("postgresql://") and not DATABASE_URL.startswith("postgresql+"):
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
 
-# Connect args (only for sqlite)
+# Configure connection arguments
 connect_args = {}
 if DATABASE_URL.startswith("sqlite"):
     connect_args = {"check_same_thread": False}
+else:
+    # For PostgreSQL remote hosts, support sslmode if not specified
+    if "sslmode" not in DATABASE_URL and "localhost" not in DATABASE_URL and "127.0.0.1" not in DATABASE_URL:
+        connect_args["sslmode"] = "prefer"
 
 try:
     engine = create_engine(
         DATABASE_URL,
         connect_args=connect_args,
-        pool_pre_ping=True
+        pool_pre_ping=True,
+        pool_recycle=300
     )
 except Exception as e:
-    # Fallback to local SQLite if remote connection string parsing fails
-    print(f"[DATABASE WARNING] Failed to initialize engine with {DATABASE_URL}: {e}. Falling back to SQLite.")
+    print(f"[DATABASE WARNING] Failed to initialize engine with {DATABASE_URL}: {e}. Falling back to SQLite.", flush=True)
     DATABASE_URL = "sqlite:///./identitytrace.db"
     engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False}, pool_pre_ping=True)
 
