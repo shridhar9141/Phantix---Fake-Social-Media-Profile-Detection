@@ -73,7 +73,7 @@ if __name__ == "__main__":
     print("==========================================================", flush=True)
 
     # Launch auxiliary port forwarders so Railway edge router reaches FastAPI regardless of port config
-    auxiliary_ports = [8000, 8080, 80]
+    auxiliary_ports = [8000, 8080, 3000, 5000, 5173, 80]
     for aux_port in auxiliary_ports:
         if aux_port != port:
             threading.Thread(target=start_port_forwarder, args=(aux_port, port), daemon=True).start()
