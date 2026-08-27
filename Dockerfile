@@ -32,7 +32,6 @@ FROM python:3.11-slim AS production
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/backend \
-    PORT=8000 \
     STATIC_DIR=/app/frontend/dist
 
 WORKDIR /app
@@ -54,8 +53,8 @@ COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
 
 WORKDIR /app/backend
 
-# Documentation port (Railway dynamically overrides $PORT)
-EXPOSE 8000
+# Expose all standard application ports for Railway networking
+EXPOSE 8080 8000 80
 
 # Start FastAPI server via production entrypoint
 CMD ["python", "start.py"]
