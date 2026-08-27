@@ -14,3 +14,4 @@ tldextract>=5.1.1
 Pillow>=10.2.0
 rapidfuzz>=3.6.0
 reportlab>=5.0.0
+email-validator
