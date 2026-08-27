@@ -30,5 +30,7 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=port,
         log_level="info",
-        access_log=True
+        access_log=True,
+        proxy_headers=True,
+        forwarded_allow_ips="*"
     )

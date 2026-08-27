@@ -29,11 +29,11 @@ from app.api.v1.complaints import router as complaints_router
 def init_db_tables_background():
     """Initializes database tables in a separate thread so server startup is instant."""
     try:
-        print("[DATABASE] Auto-creating tables in background thread...")
+        print("[DATABASE] Auto-creating tables in background thread...", flush=True)
         Base.metadata.create_all(bind=engine)
-        print("[DATABASE] Tables auto-initialized successfully.")
+        print("[DATABASE] Tables auto-initialized successfully.", flush=True)
     except Exception as exc:
-        print(f"[DATABASE WARNING] Background table initialization deferred: {exc}")
+        print(f"[DATABASE WARNING] Background table initialization deferred: {exc}", flush=True)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -41,12 +41,11 @@ async def lifespan(app: FastAPI):
     Application lifespan handler.
     Starts background tasks and ensures instant HTTP readiness for Railway health checks.
     """
-    print("[STARTUP] Phantix FastAPI lifespan initializing...")
-    # Launch table creation in a non-blocking background thread
+    print("[STARTUP] Phantix FastAPI lifespan initializing...", flush=True)
     asyncio.create_task(asyncio.to_thread(init_db_tables_background))
-    print("[STARTUP] Healthcheck probe ready on /health.")
+    print("[STARTUP] Healthcheck probe ready on /health.", flush=True)
     yield
-    print("[SHUTDOWN] Phantix FastAPI shutting down...")
+    print("[SHUTDOWN] Phantix FastAPI shutting down...", flush=True)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -57,11 +56,11 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Robust CORS Configuration supporting single-domain production and localhost dev
+# Robust CORS Configuration supporting single-domain production and all Railway domains
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
-    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
+    allow_origin_regex=r"https?://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -70,6 +69,7 @@ app.add_middleware(
 # Global Exception Handler
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    print(f"[ERROR] Unhandled Exception during request {request.method} {request.url.path}: {exc}", flush=True)
     return JSONResponse(
         status_code=500,
         content={
@@ -152,7 +152,24 @@ static_dir = resolve_static_dir()
 # Mount /assets if the directory exists
 assets_dir = static_dir / "assets"
 if assets_dir.is_dir():
-    app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+    app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
+
+@app.get("/", include_in_schema=False)
+async def serve_root():
+    """Explicit root route returning the React SPA index.html."""
+    index_file = static_dir / "index.html"
+    if index_file.is_file():
+        return FileResponse(str(index_file))
+    return JSONResponse(
+        status_code=404,
+        content={
+            "success": False,
+            "error": {
+                "code": "SPA_NOT_BUILT",
+                "message": f"Frontend index.html not found at {static_dir}."
+            }
+        }
+    )
 
 @app.get("/{full_path:path}", include_in_schema=False)
 async def serve_spa(full_path: str):
@@ -182,15 +199,15 @@ async def serve_spa(full_path: str):
         )
 
     # Check if a specific root static file was requested (e.g. favicon.ico, vite.svg)
-    if static_dir.exists():
+    if static_dir.is_dir():
         potential_file = static_dir / full_path
         if full_path and potential_file.is_file():
-            return FileResponse(potential_file)
+            return FileResponse(str(potential_file))
 
         # Return the React SPA index.html for all frontend navigation routes
         index_file = static_dir / "index.html"
         if index_file.is_file():
-            return FileResponse(index_file)
+            return FileResponse(str(index_file))
 
     return JSONResponse(
         status_code=404,
@@ -198,7 +215,7 @@ async def serve_spa(full_path: str):
             "success": False,
             "error": {
                 "code": "SPA_NOT_BUILT",
-                "message": "Frontend build assets not found. Run 'npm run build' in the frontend directory."
+                "message": f"Frontend build assets not found at {static_dir}. Run 'npm run build' in the frontend directory."
             }
         }
     )
