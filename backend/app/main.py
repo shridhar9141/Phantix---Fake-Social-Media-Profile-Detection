@@ -24,15 +24,28 @@ from app.api.v1.network import router as net_router
 from app.api.v1.reports import router as reports_router
 from app.api.v1.complaints import router as complaints_router
 
-# Auto-create missing DB tables safely on startup
-Base.metadata.create_all(bind=engine)
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Application lifespan handler.
+    Initializes database tables safely on startup without crashing health checks.
+    """
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("[DATABASE] Tables auto-initialized successfully.")
+    except Exception as exc:
+        print(f"[DATABASE WARNING] Deferred table auto-creation: {exc}")
+    yield
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan
 )
 
 # Robust CORS Configuration supporting single-domain production and localhost dev
