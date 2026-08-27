@@ -1,46 +1,47 @@
 # ==============================================================================
-# Phantix — Standalone Frontend Production Image (Nginx + React SPA)
+# Phantix — Production Multi-Stage Dockerfile (Unified FastAPI + React SPA)
 # ==============================================================================
 
-# Build Stage
-FROM node:20-alpine AS builder
+# ------------------------------------------------------------------------------
+# Stage 1: Frontend Builder
+# ------------------------------------------------------------------------------
+FROM node:20-alpine AS frontend-builder
+WORKDIR /app/frontend
+
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+
+COPY frontend/ ./
+
+ARG VITE_API_BASE_URL=/api/v1
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
+RUN npm run build
+
+# ------------------------------------------------------------------------------
+# Stage 2: Production Python Runtime with FastAPI serving React SPA + API
+# ------------------------------------------------------------------------------
+FROM python:3.11-slim AS production
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app/backend \
+    STATIC_DIR=/app/frontend/dist
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm ci
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
-COPY . .
-ARG VITE_API_BASE_URL=/api/v1
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
-RUN npm run build
+COPY backend/requirements.txt ./backend/requirements.txt
+RUN pip install --no-cache-dir -r ./backend/requirements.txt
 
-# Production Nginx Stage
-FROM nginx:alpine
+COPY backend/ /app/backend/
+COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
 
-# Copy compiled React static assets
-COPY --from=builder /app/dist /usr/share/nginx/html
+WORKDIR /app/backend
 
-# Nginx config for SPA routing with dynamic DNS resolution (no boot crash if backend host is unmapped)
-RUN echo 'server { \
-    listen 80; \
-    listen 8080; \
-    root /usr/share/nginx/html; \
-    index index.html index.htm; \
-    location / { \
-        try_files $uri $uri/ /index.html; \
-    } \
-    location /api/ { \
-        resolver 127.0.0.11 8.8.8.8 1.1.1.1 valid=30s ipv6=off; \
-        set $backend_upstream "http://127.0.0.1:8000"; \
-        proxy_pass $backend_upstream; \
-        proxy_set_header Host $host; \
-        proxy_set_header X-Real-IP $remote_addr; \
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; \
-        proxy_set_header X-Forwarded-Proto $scheme; \
-    } \
-}' > /etc/nginx/conf.d/default.conf
+EXPOSE 10000 8080 8000 80
 
-EXPOSE 80 8080
-
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["python", "start.py"]

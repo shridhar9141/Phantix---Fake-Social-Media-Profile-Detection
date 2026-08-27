@@ -3,7 +3,7 @@ import sys
 import socket
 import threading
 
-# Ensure stdout and stderr flush immediately for Railway logs
+# Ensure stdout and stderr flush immediately for production logs
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(line_buffering=True)
 if hasattr(sys.stderr, "reconfigure"):
@@ -58,11 +58,11 @@ def start_port_forwarder(from_port: int, to_port: int):
         print(f"[PORT FORWARDER] Auxiliary port {from_port} not bound: {exc}", flush=True)
 
 if __name__ == "__main__":
-    port_str = os.getenv("PORT", "8080")
+    port_str = os.getenv("PORT", "10000")
     try:
         port = int(port_str)
     except (ValueError, TypeError):
-        port = 8080
+        port = 10000
 
     print("==========================================================", flush=True)
     print(f"[STARTUP] Phantix Production Server starting on 0.0.0.0:{port}", flush=True)
@@ -72,8 +72,8 @@ if __name__ == "__main__":
     print(f"[STARTUP] Firebase Project: {os.getenv('FIREBASE_PROJECT_ID', 'fake-social-media-detect-4bf0a')}", flush=True)
     print("==========================================================", flush=True)
 
-    # Launch auxiliary port forwarders so Railway edge router reaches FastAPI regardless of port config
-    auxiliary_ports = [8000, 8080, 3000, 5000, 5173, 80]
+    # Launch auxiliary port forwarders for all standard cloud platform ports (Render: 10000, Railway: 8080/8000, Web: 80)
+    auxiliary_ports = [10000, 8080, 8000, 3000, 5000, 5173, 80]
     for aux_port in auxiliary_ports:
         if aux_port != port:
             threading.Thread(target=start_port_forwarder, args=(aux_port, port), daemon=True).start()

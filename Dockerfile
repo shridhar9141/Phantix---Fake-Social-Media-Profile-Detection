@@ -1,7 +1,5 @@
 # ==============================================================================
-# Phantix — Production Multi-Stage Dockerfile
-# Stage 1: Build React Production SPA Bundle
-# Stage 2: Production Python Runtime with FastAPI serving React SPA + API
+# Phantix — Production Multi-Stage Dockerfile (Unified FastAPI + React SPA)
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
@@ -53,8 +51,8 @@ COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
 
 WORKDIR /app/backend
 
-# Expose all standard application ports for Railway networking
-EXPOSE 8080 8000 80
+# Expose all standard cloud ports (Render: 10000, Railway: 8080/8000, Web: 80)
+EXPOSE 10000 8080 8000 80
 
 # Start FastAPI server via production entrypoint
 CMD ["python", "start.py"]
