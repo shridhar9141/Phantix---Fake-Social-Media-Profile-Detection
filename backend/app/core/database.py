@@ -12,6 +12,12 @@ DATABASE_URL = os.getenv(
     "postgresql+psycopg://postgres:shridhar%40900@localhost:5432/phantix_db"
 )
 
+# Normalize Railway / Render / Heroku Postgres connection strings for psycopg 3
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
+elif DATABASE_URL.startswith("postgresql://") and not DATABASE_URL.startswith("postgresql+"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
+
 # Connect args (only if sqlite fallback is ever needed)
 connect_args = {}
 if DATABASE_URL.startswith("sqlite"):

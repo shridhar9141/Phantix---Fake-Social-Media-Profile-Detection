@@ -18,8 +18,14 @@ class Settings(BaseSettings):
         "postgresql+psycopg://postgres:shridhar%40900@localhost:5432/phantix_db"
     )
     
+    # Static Files and Environment
+    STATIC_DIR: str = os.getenv("STATIC_DIR", "")
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
+    
     # Security & Auth
     FIREBASE_PROJECT_ID: str = os.getenv("FIREBASE_PROJECT_ID", "fake-social-media-detect-4bf0a")
+    FIREBASE_CLIENT_EMAIL: str = os.getenv("FIREBASE_CLIENT_EMAIL", "")
+    FIREBASE_PRIVATE_KEY: str = os.getenv("FIREBASE_PRIVATE_KEY", "")
     JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "replace_with_secure_random_secret")
     
     # External Reputation Providers (Optional)
