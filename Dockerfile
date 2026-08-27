@@ -17,13 +17,13 @@ RUN npm ci
 # Copy frontend source files
 COPY frontend/ ./
 
-# Build arguments for Vite environment variables
-ARG VITE_FIREBASE_API_KEY
-ARG VITE_FIREBASE_AUTH_DOMAIN
-ARG VITE_FIREBASE_PROJECT_ID
-ARG VITE_FIREBASE_STORAGE_BUCKET
-ARG VITE_FIREBASE_MESSAGING_SENDER_ID
-ARG VITE_FIREBASE_APP_ID
+# Build arguments for Vite environment variables with fallback defaults
+ARG VITE_FIREBASE_API_KEY=AIzaSyAYwHbLX1HEPIuovsXdafa6uOHkA9mWAnU
+ARG VITE_FIREBASE_AUTH_DOMAIN=fake-social-media-detect-4bf0a.firebaseapp.com
+ARG VITE_FIREBASE_PROJECT_ID=fake-social-media-detect-4bf0a
+ARG VITE_FIREBASE_STORAGE_BUCKET=fake-social-media-detect-4bf0a.firebasestorage.app
+ARG VITE_FIREBASE_MESSAGING_SENDER_ID=382068959219
+ARG VITE_FIREBASE_APP_ID=1:382068959219:web:f01741f1c608c82ecf9486
 ARG VITE_API_BASE_URL=/api/v1
 
 ENV VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY \
@@ -74,5 +74,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:${PORT:-8000}/health || exit 1
 
-# Start FastAPI server on 0.0.0.0 listening on Railway dynamic $PORT
-CMD ["sh", "-c", "python -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Start FastAPI server via start.py
+CMD ["python", "start.py"]
