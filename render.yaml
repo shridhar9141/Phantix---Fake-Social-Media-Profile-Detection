@@ -16,6 +16,6 @@ services:
         generateValue: true
       - key: DATABASE_URL
         fromDatabase:
-        name:phantix-db
-        property:connectionString
+        name: phantix-db
+        property: connectionString
 
